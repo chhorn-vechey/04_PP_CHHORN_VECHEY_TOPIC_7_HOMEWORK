@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import urllib.request
 from typing import Any, Dict, List, Optional
 from harness import ExecutionHarness
 from schemas import TOOL_SCHEMAS
@@ -31,8 +32,8 @@ Respond with a single valid JSON object strictly matching one of these two struc
 }}
 
 Rules:
+- Never assume permissions or block actions yourself; always propose the relevant tool and let the application harness enforce authorization and security rules.
 - Output valid JSON only, without markdown fences or additional commentary.
-- Do not make up product IDs or details; retrieve them using tools first.
 - Only call one tool per turn.
 """
 
@@ -46,21 +47,52 @@ def _build_tools_description() -> str:
     return "\n".join(lines)
 
 
+def _check_local_ollama() -> Optional[str]:
+    try:
+        req = urllib.request.urlopen("http://localhost:11434/api/tags", timeout=1.5)
+        if req.getcode() == 200:
+            data = json.loads(req.read().decode())
+            models = [m.get("name", "") for m in data.get("models", [])]
+            for m in models:
+                if "llama" in m or "mistral" in m or "qwen" in m or "gemma" in m:
+                    return m
+            if models:
+                text_models = [m for m in models if "embed" not in m]
+                return text_models[0] if text_models else models[0]
+    except Exception:
+        pass
+    return None
+
+
 class LLMClient:
-    def __init__(self, provider: str = "auto"):
+    def __init__(self, provider: str = "auto", model_name: Optional[str] = None):
         self.provider = provider
+        self.model_name = model_name
         self._init_backend()
 
     def _init_backend(self) -> None:
         if self.provider == "auto":
-            if os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
+            local_model = _check_local_ollama()
+            if local_model:
+                self.provider = "ollama"
+                self.model_name = local_model
+            elif os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
                 self.provider = "gemini"
             elif os.getenv("OPENAI_API_KEY"):
                 self.provider = "openai"
             else:
                 self.provider = "simulated"
 
-        if self.provider == "gemini":
+        if self.provider == "ollama":
+            try:
+                import ollama
+                self.ollama_client = ollama
+                if not self.model_name:
+                    self.model_name = _check_local_ollama() or "llama3.2:latest"
+            except Exception:
+                self.provider = "simulated"
+
+        elif self.provider == "gemini":
             try:
                 import google.generativeai as genai
                 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
@@ -71,6 +103,7 @@ class LLMClient:
                 )
             except Exception:
                 self.provider = "simulated"
+
         elif self.provider == "openai":
             try:
                 from openai import OpenAI
@@ -83,12 +116,26 @@ class LLMClient:
             return self._simulated_response(messages)
 
         try:
-            if self.provider == "gemini":
+            if self.provider == "ollama":
+                response = self.ollama_client.chat(
+                    model=self.model_name,
+                    messages=messages,
+                    format="json",
+                    options={"temperature": 0.0},
+                )
+                raw_text = response.message.content or "{}"
+                parsed = self._parse_json(raw_text)
+                if parsed and ("action" in parsed or "thought" in parsed):
+                    return parsed
+
+            elif self.provider == "gemini":
                 combined_prompt = "\n\n".join(
                     f"{msg['role'].upper()}:\n{msg['content']}" for msg in messages
                 )
                 response = self.model.generate_content(combined_prompt)
-                return self._parse_json(response.text)
+                parsed = self._parse_json(response.text)
+                if parsed:
+                    return parsed
 
             elif self.provider == "openai":
                 response = self.client.chat.completions.create(
@@ -98,7 +145,9 @@ class LLMClient:
                     temperature=0.0,
                 )
                 raw_text = response.choices[0].message.content or "{}"
-                return self._parse_json(raw_text)
+                parsed = self._parse_json(raw_text)
+                if parsed:
+                    return parsed
         except Exception:
             return self._simulated_response(messages)
 
@@ -123,7 +172,6 @@ class LLMClient:
             if role == "user" and not user_query:
                 user_query = content
             elif role == "user" and content.startswith("Tool Result for "):
-                # Extract tool name and parse result
                 match = re.match(r"Tool Result for (\w+):\s*(.*)", content)
                 if match:
                     t_name = match.group(1)
@@ -193,7 +241,7 @@ class LLMClient:
                 "answer": f"Order successful! Purchased {qty}x product ID {target_id} for a total of ${total}. Remaining stock: {rem}.",
             }
 
-        # Branch 3: Search and stock queries (e.g. Find in-stock laptops)
+        # Branch 3: Search and stock queries
         if "search_products" not in executed_tools:
             kw = "laptop"
             if "headphone" in lower_query or "audio" in lower_query:
@@ -220,7 +268,6 @@ class LLMClient:
                 "arguments": {"product_id": candidate_id},
             }
 
-        # After search + check_stock
         stock_info = last_tool_result or {}
         prod_name = stock_info.get("name", "Product")
         units = stock_info.get("stock", 0)
@@ -236,13 +283,14 @@ class Agent:
         self,
         harness: ExecutionHarness,
         provider: str = "auto",
+        model_name: Optional[str] = None,
         max_iterations: int = 5,
         verbose: bool = True,
     ):
         self.harness = harness
         self.max_iterations = max_iterations
         self.verbose = verbose
-        self.llm = LLMClient(provider=provider)
+        self.llm = LLMClient(provider=provider, model_name=model_name)
 
     def run(self, user_request: str) -> Dict[str, Any]:
         tools_doc = _build_tools_description()
@@ -254,12 +302,13 @@ class Agent:
         ]
 
         trace: List[Dict[str, Any]] = []
+        provider_display = f"{self.llm.provider.upper()}" + (f" ({self.llm.model_name})" if getattr(self.llm, "model_name", None) else "")
 
         if self.verbose:
             print("=" * 65)
             print(f"User Request : {user_request}")
             print(f"Active Role  : {self.harness.role.upper()}")
-            print(f"LLM Provider : {self.llm.provider.upper()}")
+            print(f"LLM Provider : {provider_display}")
             print("=" * 65)
 
         for iteration in range(1, self.max_iterations + 1):
@@ -271,7 +320,8 @@ class Agent:
             action = step_decision.get("action", "")
 
             if self.verbose:
-                print(f"  Thought : {thought}")
+                if thought:
+                    print(f"  Thought : {thought}")
 
             if action == "final_answer":
                 answer = step_decision.get("answer", "")
