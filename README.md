@@ -11,7 +11,7 @@ The Shopping Assistant Agent receives natural language user requests, analyzes w
 Rather than granting the model direct access to execute arbitrary actions, all proposed tool calls pass through an **Application Execution Harness** that validates arguments against strict Pydantic schemas, verifies caller role permissions, and bounds execution loops.
 
 Key capabilities:
-- **Real Model & Multi-Backend Support**: Runs natively with local AI models via **Ollama (LLaMA 3.2)**, or cloud LLMs (**Google Gemini** or **OpenAI**). No external API keys or internet connection required when using local Ollama.
+- **Local AI Model Integration**: Powered directly by your local **Ollama** instance running **LLaMA 3.2 (`llama3.2:latest`)**. Operates completely offline with zero API keys or external cloud dependencies.
 - **Multi-step Reasoning**: Dynamically chains tools across product catalog search, inventory verification, purchasing, and catalog management.
 - **Application-Enforced Permissions**: Strict role access control (Customer vs. Admin) checked in Python application logic.
 - **Defensive Containment**: Intercepts invalid arguments, tool hallucinations, and unpermitted calls, returning structured errors rather than crashing.
@@ -211,7 +211,7 @@ Run the automated pytest test suite:
 pytest test_agent.py -v
 ```
 
-### 6. LLM Provider Flexibility
-The agent connects to the following models:
-1. **Local Model (Ollama)**: Connects directly to local Ollama running `llama3.2:latest` (Default). Requires zero API keys and runs offline!
-2. **Cloud Models**: If `GEMINI_API_KEY` or `OPENAI_API_KEY` is set in the environment or `.env`, pass `--provider gemini` or `--provider openai` to use Google Gemini or OpenAI.
+### 6. Local Model Configuration
+The agent runs against your local Ollama server:
+- Model used: `llama3.2:latest` (or specify another local model via `--model <model_name>`).
+- To start Ollama if not already running: `ollama serve`.

@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from typing import Any, Dict, List, Optional
 import ollama
@@ -50,61 +49,18 @@ def _build_tools_description() -> str:
 
 
 class LLMClient:
-    def __init__(self, provider: str = "auto", model_name: Optional[str] = None):
-        self.provider = provider
-        self.model_name = model_name or "llama3.2:latest"
-        self._init_backend()
-
-    def _init_backend(self) -> None:
-        if self.provider == "auto":
-            if os.getenv("OPENAI_API_KEY"):
-                self.provider = "openai"
-            elif os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"):
-                self.provider = "gemini"
-            else:
-                self.provider = "ollama"
-
-        if self.provider == "openai":
-            from openai import OpenAI
-            self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        elif self.provider == "gemini":
-            import google.generativeai as genai
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-            genai.configure(api_key=api_key)
-            self.gemini_model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                generation_config={"response_mime_type": "application/json"}
-            )
+    def __init__(self, model_name: str = "llama3.2:latest"):
+        self.model_name = model_name
 
     def generate(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
-        if self.provider == "ollama":
-            response = ollama.chat(
-                model=self.model_name,
-                messages=messages,
-                format="json",
-                options={"temperature": 0.0},
-            )
-            raw_text = response.message.content or "{}"
-            return self._parse_json(raw_text)
-
-        elif self.provider == "openai":
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.0,
-            )
-            raw_text = response.choices[0].message.content or "{}"
-            return self._parse_json(raw_text)
-
-        elif self.provider == "gemini":
-            combined_prompt = "\n\n".join(
-                f"{msg['role'].upper()}:\n{msg['content']}" for msg in messages
-            )
-            response = self.gemini_model.generate_content(combined_prompt)
-            return self._parse_json(response.text)
-
-        raise ValueError(f"Unsupported LLM provider: {self.provider}")
+        response = ollama.chat(
+            model=self.model_name,
+            messages=messages,
+            format="json",
+            options={"temperature": 0.0},
+        )
+        raw_text = response.message.content or "{}"
+        return self._parse_json(raw_text)
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
         cleaned = text.strip()
@@ -118,15 +74,14 @@ class Agent:
     def __init__(
         self,
         harness: ExecutionHarness,
-        provider: str = "auto",
-        model_name: Optional[str] = None,
+        model_name: str = "llama3.2:latest",
         max_iterations: int = 5,
         verbose: bool = True,
     ):
         self.harness = harness
         self.max_iterations = max_iterations
         self.verbose = verbose
-        self.llm = LLMClient(provider=provider, model_name=model_name)
+        self.llm = LLMClient(model_name=model_name)
 
     def run(self, user_request: str) -> Dict[str, Any]:
         tools_doc = _build_tools_description()
@@ -138,13 +93,12 @@ class Agent:
         ]
 
         trace: List[Dict[str, Any]] = []
-        provider_display = f"{self.llm.provider.upper()}" + (f" ({self.llm.model_name})" if getattr(self.llm, "model_name", None) else "")
 
         if self.verbose:
             print("=" * 65)
             print(f"User Request : {user_request}")
             print(f"Active Role  : {self.harness.role.upper()}")
-            print(f"LLM Provider : {provider_display}")
+            print(f"LLM Model    : {self.llm.model_name}")
             print("=" * 65)
 
         for iteration in range(1, self.max_iterations + 1):

@@ -1,15 +1,12 @@
 import argparse
 import sys
-from dotenv import load_dotenv
 
 from agent import Agent
 from harness import ExecutionHarness
 from tools import reset_catalog
 
-load_dotenv()
 
-
-def run_demo(provider: str = "auto") -> None:
+def run_demo(model_name: str = "llama3.2:latest") -> None:
     print("\n" + "=" * 70)
     print("      Topic 07 - Autonomous Agent & Tool Integration Demo")
     print("=" * 70)
@@ -18,19 +15,19 @@ def run_demo(provider: str = "auto") -> None:
     print("\n>>> Scenario 1: Multi-Step Agent Loop (Customer finds in-stock laptop)")
     reset_catalog()
     harness_1 = ExecutionHarness(role="customer", max_tool_calls=5)
-    agent_1 = Agent(harness=harness_1, provider=provider, max_iterations=5, verbose=True)
+    agent_1 = Agent(harness=harness_1, model_name=model_name, max_iterations=5, verbose=True)
     agent_1.run("Find a laptop that is currently in stock.")
 
     # Testcase 2: Permission Enforcement (Customer tries restricted admin action)
     print("\n>>> Scenario 2: Permission Control Check (Customer attempts delete_product)")
     harness_2 = ExecutionHarness(role="customer", max_tool_calls=5)
-    agent_2 = Agent(harness=harness_2, provider=provider, max_iterations=5, verbose=True)
+    agent_2 = Agent(harness=harness_2, model_name=model_name, max_iterations=5, verbose=True)
     agent_2.run("Delete product 1 from the catalog.")
 
     # Testcase 3: Authorized Admin Action
     print("\n>>> Scenario 3: Authorized Execution (Admin deletes product 1)")
     harness_3 = ExecutionHarness(role="admin", max_tool_calls=5)
-    agent_3 = Agent(harness=harness_3, provider=provider, max_iterations=5, verbose=True)
+    agent_3 = Agent(harness=harness_3, model_name=model_name, max_iterations=5, verbose=True)
     agent_3.run("Delete product 1 from the catalog.")
 
     # Testcase 4: Safety & Validation (Invalid inputs handled by schema/harness)
@@ -53,13 +50,12 @@ def run_demo(provider: str = "auto") -> None:
     print("=" * 70 + "\n")
 
 
-def interactive_mode(role: str = "customer", provider: str = "auto") -> None:
+def interactive_mode(role: str = "customer", model_name: str = "llama3.2:latest") -> None:
     reset_catalog()
     harness = ExecutionHarness(role=role, max_tool_calls=5)
-    agent = Agent(harness=harness, provider=provider, max_iterations=5, verbose=True)
+    agent = Agent(harness=harness, model_name=model_name, max_iterations=5, verbose=True)
 
-    provider_name = f"{agent.llm.provider.upper()}" + (f" ({agent.llm.model_name})" if getattr(agent.llm, "model_name", None) else "")
-    print(f"\n[Interactive Session Started | Role: {role.upper()} | Provider: {provider_name}]")
+    print(f"\n[Interactive Session Started | Role: {role.upper()} | Model: {model_name}]")
     print("Type your request below (or 'exit' / 'quit' to end):\n")
 
     while True:
@@ -81,32 +77,30 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Autonomous Shopping Agent with Security Harness")
     parser.add_argument("--role", choices=["customer", "admin"], default="customer", help="User role for permission checks")
     parser.add_argument("--prompt", type=str, default=None, help="Direct prompt to process")
-    parser.add_argument("--provider", choices=["auto", "ollama", "gemini", "openai"], default="auto", help="LLM backend provider")
+    parser.add_argument("--model", type=str, default="llama3.2:latest", help="Ollama model name (default: llama3.2:latest)")
     parser.add_argument("--demo", action="store_true", help="Run full demonstration testcases")
     args = parser.parse_args()
 
     if args.demo:
-        run_demo(provider=args.provider)
+        run_demo(model_name=args.model)
     elif args.prompt:
         harness = ExecutionHarness(role=args.role, max_tool_calls=5)
-        agent = Agent(harness=harness, provider=args.provider, max_iterations=5, verbose=True)
+        agent = Agent(harness=harness, model_name=args.model, max_iterations=5, verbose=True)
         agent.run(args.prompt)
     elif "--role" in sys.argv:
-        # If the user explicitly passed --role, jump directly into interactive mode for that role!
-        interactive_mode(role=args.role, provider=args.provider)
+        interactive_mode(role=args.role, model_name=args.model)
     else:
-        # If no arguments were given at all, show the quick menu
         print("\n=== Shopping Agent Launcher ===")
         print("1. Run Full Demonstration Scenarios (Default)")
         print("2. Interactive Customer Mode")
         print("3. Interactive Admin Mode")
         choice = input("Select an option (1/2/3) [Default 1]: ").strip()
         if choice == "2":
-            interactive_mode(role="customer", provider=args.provider)
+            interactive_mode(role="customer", model_name=args.model)
         elif choice == "3":
-            interactive_mode(role="admin", provider=args.provider)
+            interactive_mode(role="admin", model_name=args.model)
         else:
-            run_demo(provider=args.provider)
+            run_demo(model_name=args.model)
 
 
 if __name__ == "__main__":
