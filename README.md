@@ -29,7 +29,7 @@ Rather than granting the model direct access to execute arbitrary actions, all p
 
 ## 2. Available Tools
 
-The agent has access to 4 business tools defined in [`tools.py`](file:///d:/HRD%20Advanced%20Course/AI/Topic%207%20Homework/tools.py) with schemas in [`schemas.py`](file:///d:/HRD%20Advanced%20Course/AI/Topic%207%20Homework/schemas.py):
+The agent has access to 4 business tools defined in [tools.py](tools.py) with schemas in [schemas.py](schemas.py):
 
 | Tool | Parameters | Description |
 |---|---|---|
@@ -72,7 +72,7 @@ graph TD
 
 ## 4. Permission Rule
 
-Access permissions are enforced strictly in **application code** inside [`harness.py`](file:///d:/HRD%20Advanced%20Course/AI/Topic%207%20Homework/harness.py), independent of LLM prompts:
+Access permissions are enforced strictly in **application code** inside [harness.py](harness.py), independent of LLM prompts:
 
 | Action | Customer Role | Admin Role | Enforced Policy |
 |---|:---:|:---:|---|
