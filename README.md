@@ -1,9 +1,9 @@
 # Safe Autonomous Shopping Agent
 
-An autonomous agent application built to demonstrate structured tool integration, multi-turn reasoning loops, and application-level safety controls (role-based permissions, input validation, and execution bounds).
+An autonomous agent application implementing structured tool invocation, multi-turn decision loops, and application-level safety controls (role-based access control, schema validation, and bounded execution).
 
 > **AI Model**: **Meta LLaMA 3.2** (`llama3.2:latest`)  
-> **Inference Engine**: **Ollama** (Local execution, 100% offline, zero API keys required)
+> **Inference Engine**: **Ollama** (Local inference, 100% offline, zero API keys required)
 
 ---
 
@@ -13,15 +13,16 @@ The Shopping Assistant Agent receives natural language user requests, analyzes w
 
 Rather than granting the model direct access to execute arbitrary actions, all proposed tool calls pass through an **Application Execution Harness** that validates arguments against strict Pydantic schemas, verifies caller role permissions, and bounds execution loops.
 
-### AI Model & Inference Architecture
-- **Model**: **Meta LLaMA 3.2** (`llama3.2:latest`) served via **Ollama**.
-- **Inference Mode**: Direct structured JSON generation (`format="json"`, `temperature=0.0`) for deterministic tool calling without hallucination.
-- **Zero Cloud Dependencies**: Runs entirely offline on local hardware with no external network calls or paid API keys.
+### Technical Architecture
+- **Inference Layer**: **Meta LLaMA 3.2** (`llama3.2:latest`) running locally via Ollama.
+- **Structured Reasoning**: Deterministic JSON-mode generation (`format="json"`, `temperature=0.0`) enforcing structured action proposals (`call_tool` vs. `final_answer`).
+- **Application Harness**: Centralized security mediator intercepting all tool proposals before execution.
+- **Privacy & Portability**: Completely offline on local hardware with zero external cloud dependencies or paid API keys.
 
-Key capabilities:
-- **Local AI Reasoning**: Powered by LLaMA 3.2 for multi-turn decision-making and structured tool proposal.
-- **Multi-step Reasoning**: Dynamically chains tools across product catalog search, inventory verification, purchasing, and catalog management.
-- **Application-Enforced Permissions**: Strict role access control (Customer vs. Admin) checked in Python application logic.
+### Core Capabilities
+- **Local AI Brain**: Uses local LLaMA 3.2 for multi-turn reasoning and structured function invocation.
+- **Multi-Step Reasoning**: Dynamically chains tools across product search, inventory verification, purchasing, and catalog management.
+- **Application-Enforced Permissions**: Strict role-based access control (Customer vs. Admin) checked in Python application logic.
 - **Defensive Containment**: Intercepts invalid arguments, tool hallucinations, and unpermitted calls, returning structured errors rather than crashing.
 
 ---
@@ -47,7 +48,7 @@ The agent follows an iterative **Decision → Action → Observation** loop:
 
 ```mermaid
 graph TD
-    A[User Request] --> B[Agent Reasoning / LLM]
+    A[User Request] --> B[Agent Reasoning / LLaMA 3.2]
     B --> C{Decision}
     C -->|Tool Needed| D[Propose Tool Call + JSON Arguments]
     D --> E[Execution Harness Checks Permission & Schema]
@@ -111,12 +112,12 @@ The application incorporates multiple layers of defensive engineering:
 
 ---
 
-## 6. Example Run (Real Execution Trace with Local LLaMA 3.2)
+## 6. Example Run (Live Execution Trace with LLaMA 3.2)
 
 ### Example 1: Multi-Step Loop (Find in-stock laptop)
 **User Input**: `"Find a laptop that is currently in stock."`  
 **Active Role**: `CUSTOMER`  
-**LLM Provider**: `OLLAMA (llama3.2:latest)`
+**LLM Model**: `OLLAMA (llama3.2:latest)`
 
 ```text
 [Step 1] Agent Reasoning...
@@ -146,7 +147,7 @@ The application incorporates multiple layers of defensive engineering:
 ### Example 2: Unauthorized Tool Access (Customer attempts deletion)
 **User Input**: `"Delete product 1 from the catalog."`  
 **Active Role**: `CUSTOMER`  
-**LLM Provider**: `OLLAMA (llama3.2:latest)`
+**LLM Model**: `OLLAMA (llama3.2:latest)`
 
 ```text
 [Step 1] Agent Reasoning...
@@ -167,11 +168,11 @@ The application incorporates multiple layers of defensive engineering:
 
 ```
 .
-├── main.py                  # CLI entrypoint with demo, direct prompt, and interactive modes
-├── agent.py                 # Agent loop, multi-provider LLM client, and routing
+├── main.py                  # Application entry point (interactive, batch demo, direct prompt)
+├── agent.py                 # Core agent loop and local LLaMA 3.2 client
 ├── harness.py               # Security harness: role permissions, validation, limits
-├── tools.py                 # Tool implementations and catalog state
-├── schemas.py               # Pydantic input schemas and schema registry
+├── tools.py                 # Catalog business tools and in-memory inventory
+├── schemas.py               # Pydantic input schemas and registry
 ├── test_agent.py            # Automated test suite (pytest)
 └── requirements.txt         # Project dependencies
 ```
@@ -181,46 +182,42 @@ The application incorporates multiple layers of defensive engineering:
 ## 8. Run Instructions
 
 ### 1. Prerequisites & Setup
-1. **Python 3.10+**: Install dependencies:
+1. **Python 3.10+**: Install project dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-2. **Local Model (Ollama)**: Ensure Ollama is running with LLaMA 3.2:
+2. **Local Model (Ollama)**: Ensure Ollama is installed and running with LLaMA 3.2:
    ```bash
    ollama run llama3.2
    ```
 
-### 2. Run Pre-configured Demo Scenarios
-To run all demonstration scenarios (multi-step loop, permission enforcement, validation, and loop bounds):
+### 2. Interactive Mode (Chat Directly)
+Launch an interactive session directly with role authorization:
 ```bash
-python main.py --demo
-```
-*(Or simply run `python main.py` and press Enter to select Option 1).*
-
-### 3. Run Interactive Session Directly
-Start an interactive conversation as a customer directly:
-```bash
+# As a Customer:
 python main.py --role customer
-```
-Or start as an administrator:
-```bash
+
+# As an Administrator:
 python main.py --role admin
 ```
 
-### 4. Direct Single-Prompt Execution
+### 3. Direct Single-Prompt Execution
+Run specific user queries directly from the command line:
 ```bash
 python main.py --role customer --prompt "Find a laptop that is currently in stock."
 python main.py --role customer --prompt "Delete product 1 from catalog."
 python main.py --role admin --prompt "Delete product 1 from catalog."
 ```
 
-### 5. Run Test Suite
-Run the automated pytest test suite:
+### 4. Automated Demo Scenarios
+To run all test scenarios sequentially (multi-step loop, permission enforcement, validation, and loop limits):
+```bash
+python main.py --demo
+```
+*(Or simply run `python main.py` with no arguments to use the interactive launcher menu).*
+
+### 5. Automated Test Suite
+Execute the pytest suite to verify all schemas, tools, permissions, and agent loop behaviors:
 ```bash
 pytest test_agent.py -v
 ```
-
-### 6. Local Model Configuration
-The agent runs against your local Ollama server:
-- Model used: `llama3.2:latest` (or specify another local model via `--model <model_name>`).
-- To start Ollama if not already running: `ollama serve`.
