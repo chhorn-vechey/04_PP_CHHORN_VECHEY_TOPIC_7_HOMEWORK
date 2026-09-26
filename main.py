@@ -81,7 +81,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Autonomous Shopping Agent with Security Harness")
     parser.add_argument("--role", choices=["customer", "admin"], default="customer", help="User role for permission checks")
     parser.add_argument("--prompt", type=str, default=None, help="Direct prompt to process")
-    parser.add_argument("--provider", choices=["auto", "gemini", "openai", "simulated", "ollama"], default="auto", help="LLM backend provider")
+    parser.add_argument("--provider", choices=["auto", "ollama", "gemini", "openai"], default="auto", help="LLM backend provider")
     parser.add_argument("--demo", action="store_true", help="Run full demonstration testcases")
     args = parser.parse_args()
 

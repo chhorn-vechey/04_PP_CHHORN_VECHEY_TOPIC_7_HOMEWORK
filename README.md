@@ -11,7 +11,7 @@ The Shopping Assistant Agent receives natural language user requests, analyzes w
 Rather than granting the model direct access to execute arbitrary actions, all proposed tool calls pass through an **Application Execution Harness** that validates arguments against strict Pydantic schemas, verifies caller role permissions, and bounds execution loops.
 
 Key capabilities:
-- **Real Model & Multi-Backend Support**: Runs natively with local AI models via **Ollama (LLaMA 3.2)**, cloud LLMs (**Google Gemini** or **OpenAI**), with an automatic fallback simulator so the project runs on any computer out of the box with zero external dependencies.
+- **Real Model & Multi-Backend Support**: Runs natively with local AI models via **Ollama (LLaMA 3.2)**, or cloud LLMs (**Google Gemini** or **OpenAI**). No external API keys or internet connection required when using local Ollama.
 - **Multi-step Reasoning**: Dynamically chains tools across product catalog search, inventory verification, purchasing, and catalog management.
 - **Application-Enforced Permissions**: Strict role access control (Customer vs. Admin) checked in Python application logic.
 - **Defensive Containment**: Intercepts invalid arguments, tool hallucinations, and unpermitted calls, returning structured errors rather than crashing.
@@ -212,7 +212,6 @@ pytest test_agent.py -v
 ```
 
 ### 6. LLM Provider Flexibility
-The agent automatically detects the best available model on the host system:
-1. **Local Model (Ollama)**: Automatically detects and connects to a running local Ollama instance (e.g. `llama3.2`). No API keys or internet needed!
-2. **Cloud Models**: If `GEMINI_API_KEY` or `OPENAI_API_KEY` is set in the environment or `.env`, it will use Gemini or OpenAI.
-3. **Zero-Dependency Fallback**: If neither is installed/configured (such as during automated grading on a clean machine), it falls back to a deterministic simulation engine so execution never fails.
+The agent connects to the following models:
+1. **Local Model (Ollama)**: Connects directly to local Ollama running `llama3.2:latest` (Default). Requires zero API keys and runs offline!
+2. **Cloud Models**: If `GEMINI_API_KEY` or `OPENAI_API_KEY` is set in the environment or `.env`, pass `--provider gemini` or `--provider openai` to use Google Gemini or OpenAI.
