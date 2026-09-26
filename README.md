@@ -2,6 +2,9 @@
 
 An autonomous agent application built to demonstrate structured tool integration, multi-turn reasoning loops, and application-level safety controls (role-based permissions, input validation, and execution bounds).
 
+> **AI Model**: **Meta LLaMA 3.2** (`llama3.2:latest`)  
+> **Inference Engine**: **Ollama** (Local execution, 100% offline, zero API keys required)
+
 ---
 
 ## 1. Project Overview
@@ -10,8 +13,13 @@ The Shopping Assistant Agent receives natural language user requests, analyzes w
 
 Rather than granting the model direct access to execute arbitrary actions, all proposed tool calls pass through an **Application Execution Harness** that validates arguments against strict Pydantic schemas, verifies caller role permissions, and bounds execution loops.
 
+### AI Model & Inference Architecture
+- **Model**: **Meta LLaMA 3.2** (`llama3.2:latest`) served via **Ollama**.
+- **Inference Mode**: Direct structured JSON generation (`format="json"`, `temperature=0.0`) for deterministic tool calling without hallucination.
+- **Zero Cloud Dependencies**: Runs entirely offline on local hardware with no external network calls or paid API keys.
+
 Key capabilities:
-- **Local AI Model Integration**: Powered directly by your local **Ollama** instance running **LLaMA 3.2 (`llama3.2:latest`)**. Operates completely offline with zero API keys or external cloud dependencies.
+- **Local AI Reasoning**: Powered by LLaMA 3.2 for multi-turn decision-making and structured tool proposal.
 - **Multi-step Reasoning**: Dynamically chains tools across product catalog search, inventory verification, purchasing, and catalog management.
 - **Application-Enforced Permissions**: Strict role access control (Customer vs. Admin) checked in Python application logic.
 - **Defensive Containment**: Intercepts invalid arguments, tool hallucinations, and unpermitted calls, returning structured errors rather than crashing.
@@ -172,11 +180,15 @@ The application incorporates multiple layers of defensive engineering:
 
 ## 8. Run Instructions
 
-### 1. Prerequisites & Installation
-Ensure Python 3.10+ is installed:
-```bash
-pip install -r requirements.txt
-```
+### 1. Prerequisites & Setup
+1. **Python 3.10+**: Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Local Model (Ollama)**: Ensure Ollama is running with LLaMA 3.2:
+   ```bash
+   ollama run llama3.2
+   ```
 
 ### 2. Run Pre-configured Demo Scenarios
 To run all demonstration scenarios (multi-step loop, permission enforcement, validation, and loop bounds):
