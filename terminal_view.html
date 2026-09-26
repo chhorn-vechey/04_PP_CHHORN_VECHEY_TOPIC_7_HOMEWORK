@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agent Execution Output</title>
+  <style>
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+      padding: 30px;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .terminal-window {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      width: 950px;
+      overflow: hidden;
+    }
+    .terminal-header {
+      background: #21262d;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #30363d;
+    }
+    .dots {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      color: #8b949e;
+      font-weight: 600;
+    }
+    .terminal-body {
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .hl-cyan { color: #58a6ff; font-weight: bold; }
+    .hl-yellow { color: #f2cc60; font-weight: bold; }
+    .hl-purple { color: #bc8cff; font-weight: bold; }
+    .hl-blue { color: #79c0ff; }
+    .hl-green { color: #7ee787; font-weight: bold; }
+    .hl-success { color: #56d364; font-weight: bold; }
+    .hl-danger { color: #f85149; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="terminal-window">
+    <div class="terminal-header">
+      <div class="dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="terminal-title">bash - python main.py --demo (Topic 07 Safe Agent Execution)</div>
+    </div>
+    <div class="terminal-body">
+======================================================================
+      Topic 07 - Autonomous Agent &amp; Tool Integration Demo
+======================================================================
+
+<span class='hl-cyan'>&gt;&gt;&gt; Scenario</span> 1: Multi-Step Agent Loop (Customer finds in-stock laptop)
+=================================================================
+<span class='hl-yellow'>User Request :</span> Find a laptop that is currently in stock.
+<span class='hl-purple'>Active Role  :</span> CUSTOMER
+<span class='hl-blue'>LLM Provider :</span> SIMULATED
+=================================================================
+
+[Step 1] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : The user is searching for items. Searching catalog for &#x27;laptop&#x27;.
+  <span class='hl-green'>Decision: Propose Tool</span> -&gt; search_products({&#x27;query&#x27;: &#x27;laptop&#x27;})
+  <span class='hl-purple'>Harness : Checked</span> -&gt; <span class='hl-success'>Status: success</span>
+  Result  : {&#x27;status&#x27;: &#x27;success&#x27;, &#x27;count&#x27;: 2, &#x27;results&#x27;: [{&#x27;id&#x27;: 1, &#x27;name&#x27;: &#x27;ThinkPad Carbon Ultrabook&#x27;, &#x27;category&#x27;: &#x27;Laptops&#x27;, &#x27;price&#x27;: 1299.99}, {&#x27;id&#x27;: 2, &#x27;name&#x27;: &#x27;MacBook Air 13-inch&#x27;, &#x27;category&#x27;: &#x27;Laptops&#x27;, &#x27;price&#x27;: 999.0}]}
+
+[Step 2] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : Catalog search returned results. Now checking inventory stock for candidate ID 1.
+  <span class='hl-green'>Decision: Propose Tool</span> -&gt; check_stock({&#x27;product_id&#x27;: 1})
+  <span class='hl-purple'>Harness : Checked</span> -&gt; <span class='hl-success'>Status: success</span>
+  Result  : {&#x27;status&#x27;: &#x27;success&#x27;, &#x27;product_id&#x27;: 1, &#x27;name&#x27;: &#x27;ThinkPad Carbon Ultrabook&#x27;, &#x27;stock&#x27;: 5, &#x27;in_stock&#x27;: True}
+
+[Step 3] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : We have identified the product and verified current stock availability.
+  <span class='hl-green'>Decision: Final Answer</span>
+  Answer  : I found the &#x27;ThinkPad Carbon Ultrabook&#x27;. It is currently in stock with 5 units available for purchase.
+
+
+<span class='hl-cyan'>&gt;&gt;&gt; Scenario</span> 2: Permission Control Check (Customer attempts delete_product)
+=================================================================
+<span class='hl-yellow'>User Request :</span> Delete product 1 from the catalog.
+<span class='hl-purple'>Active Role  :</span> CUSTOMER
+<span class='hl-blue'>LLM Provider :</span> SIMULATED
+=================================================================
+
+[Step 1] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : The user wants to delete product ID 1. Proposing &#x27;delete_product&#x27; action.
+  <span class='hl-green'>Decision: Propose Tool</span> -&gt; delete_product({&#x27;product_id&#x27;: 1})
+  <span class='hl-purple'>Harness : Checked</span> -&gt; <span class='hl-danger'>Status: error</span>
+  Result  : {&#x27;status&#x27;: &#x27;error&#x27;, &#x27;error_code&#x27;: &#x27;PERMISSION_DENIED&#x27;, &#x27;message&#x27;: &quot;Permission denied: role &#x27;customer&#x27; is not allowed to call &#x27;delete_product&#x27;.&quot;}
+
+[Step 2] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : Action was rejected by application: Permission denied: role &#x27;customer&#x27; is not allowed to call &#x27;delete_product&#x27;.
+  <span class='hl-green'>Decision: Final Answer</span>
+  Answer  : Unable to delete product 1. Permission denied: role &#x27;customer&#x27; is not allowed to call &#x27;delete_product&#x27;.
+
+
+<span class='hl-cyan'>&gt;&gt;&gt; Scenario</span> 3: Authorized Execution (Admin deletes product 1)
+=================================================================
+<span class='hl-yellow'>User Request :</span> Delete product 1 from the catalog.
+<span class='hl-purple'>Active Role  :</span> ADMIN
+<span class='hl-blue'>LLM Provider :</span> SIMULATED
+=================================================================
+
+[Step 1] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : The user wants to delete product ID 1. Proposing &#x27;delete_product&#x27; action.
+  <span class='hl-green'>Decision: Propose Tool</span> -&gt; delete_product({&#x27;product_id&#x27;: 1})
+  <span class='hl-purple'>Harness : Checked</span> -&gt; <span class='hl-success'>Status: success</span>
+  Result  : {&#x27;status&#x27;: &#x27;success&#x27;, &#x27;message&#x27;: &quot;Product &#x27;ThinkPad Carbon Ultrabook&#x27; (ID: 1) was successfully deleted from catalog.&quot;}
+
+[Step 2] <span class='hl-blue'>Agent Reasoning...</span>
+  Thought : Observed successful deletion from catalog.
+  <span class='hl-green'>Decision: Final Answer</span>
+  Answer  : Product &#x27;ThinkPad Carbon Ultrabook&#x27; (ID: 1) was successfully deleted from catalog.
+
+
+<span class='hl-cyan'>&gt;&gt;&gt; Scenario</span> 4: Safety Validation (Negative ID or invalid quantity)
+Executing tool with invalid argument product_id=-99...
+<span class='hl-yellow'>Validation Result:</span> {&#x27;status&#x27;: &#x27;error&#x27;, &#x27;error_code&#x27;: &#x27;VALIDATION_ERROR&#x27;, &#x27;message&#x27;: &quot;Input validation failed for &#x27;check_stock&#x27;: product_id: Input should be greater than 0&quot;}
+
+<span class='hl-cyan'>&gt;&gt;&gt; Scenario</span> 5: Maximum Tool-Call Limit Boundary
+Call 1 status: success
+Call 2 (exceeding limit) status: {&#x27;status&#x27;: &#x27;error&#x27;, &#x27;error_code&#x27;: &#x27;RATE_LIMIT_EXCEEDED&#x27;, &#x27;message&#x27;: &#x27;Execution halted: reached maximum limit of 1 tool calls.&#x27;}
+
+======================================================================
+All demonstration scenarios completed successfully.
+======================================================================
+
+</div>
+  </div>
+</body>
+</html>

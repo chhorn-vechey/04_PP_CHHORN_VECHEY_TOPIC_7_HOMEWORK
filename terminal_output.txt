@@ -1,0 +1,80 @@
+
+======================================================================
+      Topic 07 - Autonomous Agent & Tool Integration Demo
+======================================================================
+
+>>> Scenario 1: Multi-Step Agent Loop (Customer finds in-stock laptop)
+=================================================================
+User Request : Find a laptop that is currently in stock.
+Active Role  : CUSTOMER
+LLM Provider : SIMULATED
+=================================================================
+
+[Step 1] Agent Reasoning...
+  Thought : The user is searching for items. Searching catalog for 'laptop'.
+  Decision: Propose Tool -> search_products({'query': 'laptop'})
+  Harness : Checked -> Status: success
+  Result  : {'status': 'success', 'count': 2, 'results': [{'id': 1, 'name': 'ThinkPad Carbon Ultrabook', 'category': 'Laptops', 'price': 1299.99}, {'id': 2, 'name': 'MacBook Air 13-inch', 'category': 'Laptops', 'price': 999.0}]}
+
+[Step 2] Agent Reasoning...
+  Thought : Catalog search returned results. Now checking inventory stock for candidate ID 1.
+  Decision: Propose Tool -> check_stock({'product_id': 1})
+  Harness : Checked -> Status: success
+  Result  : {'status': 'success', 'product_id': 1, 'name': 'ThinkPad Carbon Ultrabook', 'stock': 5, 'in_stock': True}
+
+[Step 3] Agent Reasoning...
+  Thought : We have identified the product and verified current stock availability.
+  Decision: Final Answer
+  Answer  : I found the 'ThinkPad Carbon Ultrabook'. It is currently in stock with 5 units available for purchase.
+
+
+>>> Scenario 2: Permission Control Check (Customer attempts delete_product)
+=================================================================
+User Request : Delete product 1 from the catalog.
+Active Role  : CUSTOMER
+LLM Provider : SIMULATED
+=================================================================
+
+[Step 1] Agent Reasoning...
+  Thought : The user wants to delete product ID 1. Proposing 'delete_product' action.
+  Decision: Propose Tool -> delete_product({'product_id': 1})
+  Harness : Checked -> Status: error
+  Result  : {'status': 'error', 'error_code': 'PERMISSION_DENIED', 'message': "Permission denied: role 'customer' is not allowed to call 'delete_product'."}
+
+[Step 2] Agent Reasoning...
+  Thought : Action was rejected by application: Permission denied: role 'customer' is not allowed to call 'delete_product'.
+  Decision: Final Answer
+  Answer  : Unable to delete product 1. Permission denied: role 'customer' is not allowed to call 'delete_product'.
+
+
+>>> Scenario 3: Authorized Execution (Admin deletes product 1)
+=================================================================
+User Request : Delete product 1 from the catalog.
+Active Role  : ADMIN
+LLM Provider : SIMULATED
+=================================================================
+
+[Step 1] Agent Reasoning...
+  Thought : The user wants to delete product ID 1. Proposing 'delete_product' action.
+  Decision: Propose Tool -> delete_product({'product_id': 1})
+  Harness : Checked -> Status: success
+  Result  : {'status': 'success', 'message': "Product 'ThinkPad Carbon Ultrabook' (ID: 1) was successfully deleted from catalog."}
+
+[Step 2] Agent Reasoning...
+  Thought : Observed successful deletion from catalog.
+  Decision: Final Answer
+  Answer  : Product 'ThinkPad Carbon Ultrabook' (ID: 1) was successfully deleted from catalog.
+
+
+>>> Scenario 4: Safety Validation (Negative ID or invalid quantity)
+Executing tool with invalid argument product_id=-99...
+Validation Result: {'status': 'error', 'error_code': 'VALIDATION_ERROR', 'message': "Input validation failed for 'check_stock': product_id: Input should be greater than 0"}
+
+>>> Scenario 5: Maximum Tool-Call Limit Boundary
+Call 1 status: success
+Call 2 (exceeding limit) status: {'status': 'error', 'error_code': 'RATE_LIMIT_EXCEEDED', 'message': 'Execution halted: reached maximum limit of 1 tool calls.'}
+
+======================================================================
+All demonstration scenarios completed successfully.
+======================================================================
+
