@@ -165,7 +165,6 @@ The application incorporates multiple layers of defensive engineering:
 ├── tools.py                 # Tool implementations and catalog state
 ├── schemas.py               # Pydantic input schemas and schema registry
 ├── test_agent.py            # Automated test suite (pytest)
-├── generate_artifacts.py    # Generates terminal log, HTML preview, screenshot, and PDF
 ├── requirements.txt         # Project dependencies
 ├── terminal_output.txt      # Raw terminal output log from actual demo run
 ├── screenshot_terminal_output.png # High-resolution screenshot of execution
