@@ -58,7 +58,8 @@ def interactive_mode(role: str = "customer", provider: str = "auto") -> None:
     harness = ExecutionHarness(role=role, max_tool_calls=5)
     agent = Agent(harness=harness, provider=provider, max_iterations=5, verbose=True)
 
-    print(f"\n[Interactive Session Started | Role: {role.upper()} | Provider: {agent.llm.provider}]")
+    provider_name = f"{agent.llm.provider.upper()}" + (f" ({agent.llm.model_name})" if getattr(agent.llm, "model_name", None) else "")
+    print(f"\n[Interactive Session Started | Role: {role.upper()} | Provider: {provider_name}]")
     print("Type your request below (or 'exit' / 'quit' to end):\n")
 
     while True:
@@ -80,7 +81,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Autonomous Shopping Agent with Security Harness")
     parser.add_argument("--role", choices=["customer", "admin"], default="customer", help="User role for permission checks")
     parser.add_argument("--prompt", type=str, default=None, help="Direct prompt to process")
-    parser.add_argument("--provider", choices=["auto", "gemini", "openai", "simulated"], default="auto", help="LLM backend provider")
+    parser.add_argument("--provider", choices=["auto", "gemini", "openai", "simulated", "ollama"], default="auto", help="LLM backend provider")
     parser.add_argument("--demo", action="store_true", help="Run full demonstration testcases")
     args = parser.parse_args()
 
@@ -90,9 +91,13 @@ def main() -> None:
         harness = ExecutionHarness(role=args.role, max_tool_calls=5)
         agent = Agent(harness=harness, provider=args.provider, max_iterations=5, verbose=True)
         agent.run(args.prompt)
+    elif "--role" in sys.argv:
+        # If the user explicitly passed --role, jump directly into interactive mode for that role!
+        interactive_mode(role=args.role, provider=args.provider)
     else:
-        # If no arguments provided, ask or show menu
-        print("1. Run Full Demonstration Scenarios")
+        # If no arguments were given at all, show the quick menu
+        print("\n=== Shopping Agent Launcher ===")
+        print("1. Run Full Demonstration Scenarios (Default)")
         print("2. Interactive Customer Mode")
         print("3. Interactive Admin Mode")
         choice = input("Select an option (1/2/3) [Default 1]: ").strip()
