@@ -32,7 +32,9 @@ Respond with a single valid JSON object strictly matching one of these two struc
 }}
 
 Rules:
-- Never assume permissions or block actions yourself; always propose the relevant tool and let the application harness enforce authorization and security rules.
+- Never assume permissions or block actions yourself; always propose the relevant tool directly and let the application harness enforce authorization and security rules.
+- Strictly call ONLY the tools explicitly listed in Available Tools. Never invent tools such as check_permissions or get_admin_role.
+- If asked to delete a product, propose 'delete_product' directly.
 - Output valid JSON only, without markdown fences or additional commentary.
 - Only call one tool per turn.
 """
